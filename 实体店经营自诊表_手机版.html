@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>实体店经营自诊表</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, "Microsoft YaHei", "PingFang SC", sans-serif; background: #F5F7FA; color: #333; padding: 16px; line-height: 1.5; }
+.container { max-width: 520px; margin: 0 auto; }
+
+/* 头部 */
+.header { text-align: center; padding: 24px 16px 16px; }
+.header h1 { font-size: 20px; color: #1F4E79; font-weight: 700; }
+.header p { font-size: 13px; color: #888; margin-top: 6px; }
+.header .badge { display: inline-block; background: #1F4E79; color: #fff; font-size: 11px; padding: 3px 12px; border-radius: 20px; margin-bottom: 10px; }
+
+/* 卡片 */
+.card { background: #fff; border-radius: 10px; padding: 18px 16px; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+.card-title { font-size: 14px; font-weight: 700; color: #1F4E79; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #1F4E79; display: flex; align-items: center; gap: 6px; }
+.card-title .tag { font-size: 10px; background: #1F4E79; color: #fff; padding: 1px 8px; border-radius: 10px; font-weight: 400; }
+
+/* 问题 */
+.q { margin-bottom: 14px; }
+.q:last-child { margin-bottom: 0; }
+.q-label { font-size: 13px; font-weight: 600; color: #333; margin-bottom: 6px; line-height: 1.6; }
+.q-num { color: #1F4E79; font-weight: 700; }
+
+/* 选项 */
+.options { display: flex; flex-direction: column; gap: 6px; }
+.option { display: flex; align-items: flex-start; gap: 8px; padding: 8px 10px; border: 1.5px solid #E8ECF0; border-radius: 8px; cursor: pointer; transition: all 0.15s; -webkit-tap-highlight-color: transparent; }
+.option:active { background: #F0F4F8; }
+.option input { display: none; }
+.option .dot { width: 18px; height: 18px; min-width: 18px; border-radius: 50%; border: 2px solid #CBD5E0; margin-top: 1px; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+.option .dot-inner { width: 10px; height: 10px; border-radius: 50%; background: transparent; transition: all 0.15s; }
+.option .check { width: 18px; height: 18px; min-width: 18px; border-radius: 4px; border: 2px solid #CBD5E0; margin-top: 1px; display: flex; align-items: center; justify-content: center; font-size: 11px; color: transparent; transition: all 0.15s; }
+.option .opt-text { font-size: 13px; color: #444; line-height: 1.4; }
+.option .opt-note { font-size: 11px; color: #999; }
+
+.option.selected { border-color: #1F4E79; background: #F5F8FC; }
+.option.selected .dot { border-color: #1F4E79; }
+.option.selected .dot-inner { background: #1F4E79; }
+.option.selected .check { border-color: #1F4E79; background: #1F4E79; color: #fff; }
+
+/* 行业专属（默认隐藏，选中后显示） */
+.industry-section { display: none; margin-top: 6px; padding: 12px; background: #F5F8FC; border-radius: 8px; border-left: 3px solid #1F4E79; }
+.industry-section.show { display: block; }
+.industry-section .q-label { font-size: 12px; color: #1F4E79; }
+
+/* 文本输入 */
+.text-input { width: 100%; padding: 10px 12px; border: 1.5px solid #E8ECF0; border-radius: 8px; font-size: 14px; color: #333; outline: none; transition: border 0.15s; font-family: inherit; }
+.text-input:focus { border-color: #1F4E79; }
+
+/* 自诊结果 */
+.self-check-row { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.self-check { display: flex; align-items: center; gap: 6px; padding: 6px 12px; border: 1.5px solid #E8ECF0; border-radius: 20px; cursor: pointer; font-size: 12px; color: #555; transition: all 0.15s; -webkit-tap-highlight-color: transparent; }
+.self-check.selected { border-color: #1F4E79; background: #E8F0FE; color: #1F4E79; font-weight: 600; }
+.self-check input { display: none; }
+
+/* 提交按钮 */
+.submit-btn { width: 100%; padding: 14px; background: #1F4E79; color: #fff; font-size: 16px; font-weight: 700; border: none; border-radius: 10px; cursor: pointer; margin: 8px 0 20px; transition: background 0.15s; }
+.submit-btn:active { background: #163A5C; }
+
+/* 结果弹窗 */
+.modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.45); z-index: 100; justify-content: center; align-items: center; padding: 20px; }
+.modal-overlay.show { display: flex; }
+.modal { background: #fff; border-radius: 12px; max-width: 480px; width: 100%; max-height: 80vh; overflow-y: auto; padding: 24px 20px; }
+.modal h3 { font-size: 16px; color: #1F4E79; margin-bottom: 10px; }
+.modal .summary-item { font-size: 13px; padding: 6px 0; border-bottom: 1px solid #f0f0f0; }
+.modal .copy-btn { width: 100%; padding: 12px; background: #1F4E79; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 12px; }
+
+.footer-note { text-align: center; font-size: 11px; color: #aaa; padding: 12px 0 24px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header">
+  <div class="badge">实体店经营自诊工具</div>
+  <h1>填完这张表<br>清楚你的店在什么水平</h1>
+  <p>约6-8分钟 · 手机上直接勾选 · 信息仅用于诊断分析</p>
+</div>
+
+<form id="form" onsubmit="return false;">
+
+<!-- ===== 基本信息 ===== -->
+<div class="card">
+  <div class="card-title"><span>📋</span> 店铺基本信息</div>
+
+  <div class="q">
+    <div class="q-label"><span class="q-num">①</span> 店铺名称</div>
+    <input class="text-input" id="shopName" placeholder="请输入你的店铺名称" style="margin-bottom:10px;">
+  </div>
+
+  <div class="q">
+    <div class="q-label"><span class="q-num">②</span> 你的店铺属于哪个行业？</div>
+    <div class="options" id="industryGroup">
+      <label class="option" data-value="餐饮"><input type="radio" name="industry" value="餐饮"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">餐饮 <span class="opt-note">餐厅、小吃、烧烤、奶茶等</span></span></label>
+      <label class="option" data-value="女装"><input type="radio" name="industry" value="女装"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">女装 <span class="opt-note">服装店、鞋包配饰等</span></span></label>
+      <label class="option" data-value="美业"><input type="radio" name="industry" value="美业"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">美业 <span class="opt-note">美容、美发、美甲等</span></span></label>
+      <label class="option" data-value="社区零售"><input type="radio" name="industry" value="社区零售"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">社区零售 <span class="opt-note">超市、水果店、便利店等</span></span></label>
+      <label class="option" data-value="其他"><input type="radio" name="industry" value="其他"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">其他行业 <span class="opt-note">请注明</span></span></label>
+    </div>
+  </div>
+
+  <!-- 行业专属信息（选择后显示） -->
+  <div id="industryFields"></div>
+
+  <div class="q" style="margin-top:12px;">
+    <div class="q-label"><span class="q-num">③</span> 开业多久了？</div>
+    <div class="options" id="openTimeGroup">
+      <label class="option" data-value="不到3个月"><input type="radio" name="openTime" value="不到3个月"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">不到3个月</span></label>
+      <label class="option" data-value="3-6个月"><input type="radio" name="openTime" value="3-6个月"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">3-6个月</span></label>
+      <label class="option" data-value="6-12个月"><input type="radio" name="openTime" value="6-12个月"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">6-12个月</span></label>
+      <label class="option" data-value="1-3年"><input type="radio" name="openTime" value="1-3年"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">1-3年</span></label>
+      <label class="option" data-value="3年以上"><input type="radio" name="openTime" value="3年以上"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">3年以上</span></label>
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="q-label"><span class="q-num">④</span> 每月营业额大概多少？</div>
+    <div class="options" id="revenueGroup">
+      <label class="option" data-value="3万以下"><input type="radio" name="revenue" value="3万以下"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">3万以下</span></label>
+      <label class="option" data-value="3-5万"><input type="radio" name="revenue" value="3-5万"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">3-5万</span></label>
+      <label class="option" data-value="5-10万"><input type="radio" name="revenue" value="5-10万"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">5-10万</span></label>
+      <label class="option" data-value="10-15万"><input type="radio" name="revenue" value="10-15万"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">10-15万</span></label>
+      <label class="option" data-value="15万以上"><input type="radio" name="revenue" value="15万以上"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">15万以上</span></label>
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="q-label"><span class="q-num">⑤</span> 店铺位置在哪？</div>
+    <div class="options" id="locationGroup">
+      <label class="option" data-value="社区底商"><input type="radio" name="location" value="社区底商"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">社区底商</span></label>
+      <label class="option" data-value="商业街"><input type="radio" name="location" value="商业街"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">商业街</span></label>
+      <label class="option" data-value="商场"><input type="radio" name="location" value="商场"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">商场</span></label>
+      <label class="option" data-value="写字楼/学校周边"><input type="radio" name="location" value="写字楼/学校周边"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">写字楼/学校周边</span></label>
+      <label class="option" data-value="其他"><input type="radio" name="location" value="其他"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">其他</span></label>
+    </div>
+  </div>
+
+  <div style="display:flex; gap:10px; margin-top:8px;">
+    <div style="flex:1;">
+      <div class="q-label" style="font-size:12px;">员工人数</div>
+      <div class="options" id="employeeGroup" style="flex-direction:row;flex-wrap:wrap;">
+        <label class="option" data-value="0-1人" style="flex:1;"><input type="radio" name="employees" value="0-1人"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text" style="font-size:12px;">0-1人</span></label>
+        <label class="option" data-value="2-3人" style="flex:1;"><input type="radio" name="employees" value="2-3人"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text" style="font-size:12px;">2-3人</span></label>
+        <label class="option" data-value="4-6人" style="flex:1;"><input type="radio" name="employees" value="4-6人"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text" style="font-size:12px;">4-6人</span></label>
+      </div>
+    </div>
+    <div style="flex:1;">
+      <div class="q-label" style="font-size:12px;">月租金（元）</div>
+      <input class="text-input" id="rent" placeholder="约多少" style="font-size:13px;">
+    </div>
+  </div>
+</div>
+
+<!-- ===== 第二部分：6大维度自诊 ===== -->
+
+<!-- 客流 -->
+<div class="card">
+  <div class="card-title"><span>🚶</span> 客流诊断 <span class="tag">你的店有人来吗？</span></div>
+  <div class="q">
+    <div class="q-label">Q1 每天进店的客人大概有多少？</div>
+    <div class="options" id="Q1">
+      <label class="option" data-value="30人以上"><input type="radio" name="Q1" value="30人以上"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">30人以上 → 客流还不错</span></label>
+      <label class="option" data-value="15-30人"><input type="radio" name="Q1" value="15-30人"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">15-30人 → 有点少</span></label>
+      <label class="option" data-value="5-15人"><input type="radio" name="Q1" value="5-15人"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">5-15人 → 明显偏少</span></label>
+      <label class="option" data-value="不到5人"><input type="radio" name="Q1" value="不到5人"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">不到5人 → 严重不足</span></label>
+    </div>
+  </div>
+  <div class="q">
+    <div class="q-label">Q2 你觉得最主要的原因是什么？（可多选）</div>
+    <div class="options multi" id="Q2">
+      <label class="option" data-value="位置偏/门头不显眼"><input type="checkbox" name="Q2" value="位置偏/门头不显眼"><span class="check">✓</span><span class="opt-text">位置偏/门头不显眼</span></label>
+      <label class="option" data-value="不知道去哪找客人"><input type="checkbox" name="Q2" value="不知道去哪找客人"><span class="check">✓</span><span class="opt-text">不知道去哪找客人</span></label>
+      <label class="option" data-value="试过引流但没用"><input type="checkbox" name="Q2" value="试过引流但没用"><span class="check">✓</span><span class="opt-text">试过引流但没用</span></label>
+      <label class="option" data-value="竞争太激烈"><input type="checkbox" name="Q2" value="竞争太激烈"><span class="check">✓</span><span class="opt-text">竞争太激烈</span></label>
+      <label class="option" data-value="说不清楚"><input type="checkbox" name="Q2" value="说不清楚"><span class="check">✓</span><span class="opt-text">说不清楚原因</span></label>
+    </div>
+  </div>
+  <div class="q">
+    <div class="q-label">Q3 你有统计过每天经过店门口的人有多少吗？</div>
+    <div class="options" id="Q3">
+      <label class="option" data-value="有，清楚这个数据"><input type="radio" name="Q3" value="有，清楚这个数据"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">有，我清楚这个数据</span></label>
+      <label class="option" data-value="大概知道，没精确统计"><input type="radio" name="Q3" value="大概知道，没精确统计"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">大概知道，没精确统计</span></label>
+      <label class="option" data-value="从来没注意过"><input type="radio" name="Q3" value="从来没注意过"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">从来没注意过</span></label>
+    </div>
+  </div>
+</div>
+
+<!-- 成交 -->
+<div class="card">
+  <div class="card-title"><span>💰</span> 成交诊断 <span class="tag">进来的人买了吗？</span></div>
+  <div class="q">
+    <div class="q-label">Q4 进店客人中，大概有多少比例会买单？</div>
+    <div class="options" id="Q4">
+      <label class="option" data-value="60%以上"><input type="radio" name="Q4" value="60%以上"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">60%以上 → 成交率不错</span></label>
+      <label class="option" data-value="40%-60%"><input type="radio" name="Q4" value="40%-60%"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">40%-60% → 正常水平</span></label>
+      <label class="option" data-value="20%-40%"><input type="radio" name="Q4" value="20%-40%"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">20%-40% → 偏低了</span></label>
+      <label class="option" data-value="不到20%"><input type="radio" name="Q4" value="不到20%"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">不到20% → 问题明显</span></label>
+    </div>
+  </div>
+  <div class="q">
+    <div class="q-label">Q5 客人不买单，你觉得主要原因是？</div>
+    <div class="options" id="Q5">
+      <label class="option" data-value="价格贵了"><input type="radio" name="Q5" value="价格贵了"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">价格贵了</span></label>
+      <label class="option" data-value="产品不够好"><input type="radio" name="Q5" value="产品不够好"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">产品/服务不够好</span></label>
+      <label class="option" data-value="员工不会推销"><input type="radio" name="Q5" value="员工不会推销"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">员工不会推销</span></label>
+      <label class="option" data-value="不知道原因"><input type="radio" name="Q5" value="不知道原因"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">客人看看就走了，不知道原因</span></label>
+    </div>
+  </div>
+  <div class="q">
+    <div class="q-label">Q6 你有观察过客人进店后一般待多久吗？</div>
+    <div class="options" id="Q6">
+      <label class="option" data-value="知道，留意过"><input type="radio" name="Q6" value="知道，留意过"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">知道，我留意过</span></label>
+      <label class="option" data-value="大概有数"><input type="radio" name="Q6" value="大概有数"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">大概有数，没精确算</span></label>
+      <label class="option" data-value="没注意过"><input type="radio" name="Q6" value="没注意过"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">没注意过</span></label>
+    </div>
+  </div>
+</div>
+
+<!-- 利润 -->
+<div class="card">
+  <div class="card-title"><span>📊</span> 利润诊断 <span class="tag">赚到的钱留住没？</span></div>
+  <div class="q">
+    <div class="q-label">Q7 你算过每个月的纯利润（扣除所有成本后）吗？</div>
+    <div class="options" id="Q7">
+      <label class="option" data-value="算过，很清楚"><input type="radio" name="Q7" value="算过，很清楚"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">算过，很清楚</span></label>
+      <label class="option" data-value="大概知道没细算"><input type="radio" name="Q7" value="大概知道没细算"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">大概知道，没细算</span></label>
+      <label class="option" data-value="只算收入减进货"><input type="radio" name="Q7" value="只算收入减进货"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">只算过收入减进货，其他的没算</span></label>
+      <label class="option" data-value="没算过"><input type="radio" name="Q7" value="没算过"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">没算过，感觉不亏就行</span></label>
+    </div>
+  </div>
+  <div class="q">
+    <div class="q-label">Q8 你觉得利润低的原因是什么？（可多选）</div>
+    <div class="options multi" id="Q8">
+      <label class="option" data-value="房租太高"><input type="checkbox" name="Q8" value="房租太高"><span class="check">✓</span><span class="opt-text">房租太高</span></label>
+      <label class="option" data-value="人工成本高"><input type="checkbox" name="Q8" value="人工成本高"><span class="check">✓</span><span class="opt-text">人工成本高</span></label>
+      <label class="option" data-value="进货成本高"><input type="checkbox" name="Q8" value="进货成本高"><span class="check">✓</span><span class="opt-text">进货成本高</span></label>
+      <label class="option" data-value="损耗大"><input type="checkbox" name="Q8" value="损耗大"><span class="check">✓</span><span class="opt-text">损耗大/浪费多</span></label>
+      <label class="option" data-value="平台抽成高"><input type="checkbox" name="Q8" value="平台抽成高"><span class="check">✓</span><span class="opt-text">平台抽成高</span></label>
+      <label class="option" data-value="说不清楚"><input type="checkbox" name="Q8" value="说不清楚"><span class="check">✓</span><span class="opt-text">说不清楚</span></label>
+    </div>
+  </div>
+  <div class="q">
+    <div class="q-label">Q9 你最畅销的3个产品/服务，利润率清楚吗？</div>
+    <div class="options" id="Q9">
+      <label class="option" data-value="很清楚算过"><input type="radio" name="Q9" value="很清楚算过"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">很清楚，我算过</span></label>
+      <label class="option" data-value="大概知道"><input type="radio" name="Q9" value="大概知道"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">大概知道哪个赚得多些</span></label>
+      <label class="option" data-value="没算过"><input type="radio" name="Q9" value="没算过"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">没算过，看销量好就主推</span></label>
+    </div>
+  </div>
+</div>
+
+<!-- 推广 -->
+<div class="card">
+  <div class="card-title"><span>📢</span> 推广诊断 <span class="tag">花的钱有效果吗？</span></div>
+  <div class="q">
+    <div class="q-label">Q10 你每个月在推广上大概花多少钱？</div>
+    <div class="options" id="Q10">
+      <label class="option" data-value="没花什么钱"><input type="radio" name="Q10" value="没花什么钱"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">没花什么钱</span></label>
+      <label class="option" data-value="500元以下"><input type="radio" name="Q10" value="500元以下"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">500元以下</span></label>
+      <label class="option" data-value="500-2000元"><input type="radio" name="Q10" value="500-2000元"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">500-2000元</span></label>
+      <label class="option" data-value="2000-5000元"><input type="radio" name="Q10" value="2000-5000元"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">2000-5000元</span></label>
+      <label class="option" data-value="5000元以上"><input type="radio" name="Q10" value="5000元以上"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">5000元以上</span></label>
+    </div>
+  </div>
+  <div class="q">
+    <div class="q-label">Q11 你怎么判断推广有没有效果？</div>
+    <div class="options" id="Q11">
+      <label class="option" data-value="会算效果"><input type="radio" name="Q11" value="会算效果"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">会算来了多少人、花了多少钱</span></label>
+      <label class="option" data-value="凭感觉"><input type="radio" name="Q11" value="凭感觉"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">凭感觉——人多了就是有效</span></label>
+      <label class="option" data-value="不知道"><input type="radio" name="Q11" value="不知道"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">不知道，钱花了看运气</span></label>
+    </div>
+  </div>
+  <div class="q">
+    <div class="q-label">Q12 你做过以下哪些推广？（可多选）</div>
+    <div class="options multi" id="Q12">
+      <label class="option" data-value="美团"><input type="checkbox" name="Q12" value="美团"><span class="check">✓</span><span class="opt-text">美团团购/大众点评</span></label>
+      <label class="option" data-value="抖音"><input type="checkbox" name="Q12" value="抖音"><span class="check">✓</span><span class="opt-text">抖音探店/短视频</span></label>
+      <label class="option" data-value="小红书"><input type="checkbox" name="Q12" value="小红书"><span class="check">✓</span><span class="opt-text">小红书</span></label>
+      <label class="option" data-value="发传单"><input type="checkbox" name="Q12" value="发传单"><span class="check">✓</span><span class="opt-text">发传单/地推</span></label>
+      <label class="option" data-value="朋友圈广告"><input type="checkbox" name="Q12" value="朋友圈广告"><span class="check">✓</span><span class="opt-text">朋友圈广告</span></label>
+      <label class="option" data-value="其他"><input type="checkbox" name="Q12" value="其他"><span class="check">✓</span><span class="opt-text">其他</span></label>
+    </div>
+  </div>
+</div>
+
+<!-- 复购 -->
+<div class="card">
+  <div class="card-title"><span>🔄</span> 复购诊断 <span class="tag">客人还回来吗？</span></div>
+  <div class="q">
+    <div class="q-label">Q13 你的客人中，回头客大概占多少？</div>
+    <div class="options" id="Q13">
+      <label class="option" data-value="50%以上"><input type="radio" name="Q13" value="50%以上"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">50%以上 → 复购不错</span></label>
+      <label class="option" data-value="30%-50%"><input type="radio" name="Q13" value="30%-50%"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">30%-50% → 还可以</span></label>
+      <label class="option" data-value="10%-30%"><input type="radio" name="Q13" value="10%-30%"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">10%-30% → 偏低了</span></label>
+      <label class="option" data-value="不到10%"><input type="radio" name="Q13" value="不到10%"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">不到10% → 问题明显</span></label>
+    </div>
+  </div>
+  <div class="q">
+    <div class="q-label">Q14 你加了客人微信之后，一般怎么做？</div>
+    <div class="options" id="Q14">
+      <label class="option" data-value="分类维护"><input type="radio" name="Q14" value="分类维护"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">会分类备注，定期维护</span></label>
+      <label class="option" data-value="加了很少联系"><input type="radio" name="Q14" value="加了很少联系"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">加了但很少联系</span></label>
+      <label class="option" data-value="只发广告"><input type="radio" name="Q14" value="只发广告"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">加了，只发广告和促销</span></label>
+      <label class="option" data-value="没加微信"><input type="radio" name="Q14" value="没加微信"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">没怎么加微信</span></label>
+    </div>
+  </div>
+  <div class="q">
+    <div class="q-label">Q15 你觉得客人不回头的主要原因是什么？</div>
+    <div class="options" id="Q15">
+      <label class="option" data-value="产品没吸引力"><input type="radio" name="Q15" value="产品没吸引力"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">产品/服务没有吸引力</span></label>
+      <label class="option" data-value="周围选择太多"><input type="radio" name="Q15" value="周围选择太多"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">周围选择太多</span></label>
+      <label class="option" data-value="客人记不住"><input type="radio" name="Q15" value="客人记不住"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">客人记不住我这家店</span></label>
+      <label class="option" data-value="没想过"><input type="radio" name="Q15" value="没想过"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">没想过这个问题</span></label>
+    </div>
+  </div>
+</div>
+
+<!-- 管理 -->
+<div class="card">
+  <div class="card-title"><span>👥</span> 管理诊断 <span class="tag">你能离开店吗？</span></div>
+  <div class="q">
+    <div class="q-label">Q16 你每天在店里待多长时间？</div>
+    <div class="options" id="Q16">
+      <label class="option" data-value="8小时以内"><input type="radio" name="Q16" value="8小时以内"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">8小时以内</span></label>
+      <label class="option" data-value="8-12小时"><input type="radio" name="Q16" value="8-12小时"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">8-12小时</span></label>
+      <label class="option" data-value="12小时以上"><input type="radio" name="Q16" value="12小时以上"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">12小时以上</span></label>
+      <label class="option" data-value="除了睡觉都在"><input type="radio" name="Q16" value="除了睡觉都在"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">除了睡觉基本都在</span></label>
+    </div>
+  </div>
+  <div class="q">
+    <div class="q-label">Q17 如果你离开店一天，能正常运转吗？</div>
+    <div class="options" id="Q17">
+      <label class="option" data-value="能"><input type="radio" name="Q17" value="能"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">能，员工知道该干什么</span></label>
+      <label class="option" data-value="勉强可以"><input type="radio" name="Q17" value="勉强可以"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">勉强可以，但会出些小问题</span></label>
+      <label class="option" data-value="不行"><input type="radio" name="Q17" value="不行"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">不行，我一不在就乱</span></label>
+      <label class="option" data-value="离不开"><input type="radio" name="Q17" value="离不开"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">店里主要靠我自己，离不开</span></label>
+    </div>
+  </div>
+  <div class="q">
+    <div class="q-label">Q18 员工清楚自己每天要做什么、做成什么样算好吗？</div>
+    <div class="options" id="Q18">
+      <label class="option" data-value="清楚有安排"><input type="radio" name="Q18" value="清楚有安排"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">清楚，有明确安排</span></label>
+      <label class="option" data-value="大概知道没标准"><input type="radio" name="Q18" value="大概知道没标准"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">大概知道，但没标准</span></label>
+      <label class="option" data-value="不太清楚"><input type="radio" name="Q18" value="不太清楚"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text">不太清楚，靠我临时安排</span></label>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 自诊结果 ===== -->
+<div class="card">
+  <div class="card-title"><span>🎯</span> 你的经营健康度画像</div>
+  <p style="font-size:13px; color:#666; margin-bottom:10px;">填完了？圈出你觉得问题最大的1-2个维度：</p>
+  <div class="self-check-row" id="selfDiagnosis">
+    <label class="self-check" data-value="客流"><input type="checkbox" name="selfDiag" value="客流"><span>客流（来的人少）</span></label>
+    <label class="self-check" data-value="成交"><input type="checkbox" name="selfDiag" value="成交"><span>成交（进来不买）</span></label>
+    <label class="self-check" data-value="利润"><input type="checkbox" name="selfDiag" value="利润"><span>利润（赚不到钱）</span></label>
+    <label class="self-check" data-value="推广"><input type="checkbox" name="selfDiag" value="推广"><span>推广（钱白花了）</span></label>
+    <label class="self-check" data-value="复购"><input type="checkbox" name="selfDiag" value="复购"><span>复购（客人不回）</span></label>
+    <label class="self-check" data-value="管理"><input type="checkbox" name="selfDiag" value="管理"><span>管理（离不开人）</span></label>
+  </div>
+  <div class="q" style="margin-top:12px;">
+    <div class="q-label">你现在最想解决的1个问题是什么？</div>
+    <input class="text-input" id="mainProblem" placeholder="请写下来，比如"店里来更多客户"">
+  </div>
+  <div class="q" style="margin-top:10px;">
+    <div class="q-label">如果这个问题解决了，你估计每月能多赚多少钱？</div>
+    <input class="text-input" id="expectedGain" placeholder="元/月" type="number" style="width:160px;">
+  </div>
+</div>
+
+<button class="submit-btn" onclick="submitForm()">✅ 提交自诊结果</button>
+
+<div class="footer-note">信息仅用于经营诊断分析，不会对外泄露</div>
+
+</form>
+
+</div>
+
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h3>📋 自诊结果</h3>
+    <p style="font-size:13px; color:#666; margin-bottom:12px;">以下是你的填写结果，建议截图保存或复制发送给顾问。</p>
+    <div id="resultContent"></div>
+    <button class="copy-btn" onclick="copyResult()">📄 复制结果</button>
+    <button class="copy-btn" style="background:#888; margin-top:6px;" onclick="closeModal()">关闭</button>
+  </div>
+</div>
+
+<script>
+// 选项选中效果（单选）
+document.querySelectorAll('.options:not(.multi) .option').forEach(el => {
+  el.addEventListener('click', function() {
+    const parent = this.closest('.options');
+    parent.querySelectorAll('.option').forEach(o => o.classList.remove('selected'));
+    this.classList.add('selected');
+    const radio = this.querySelector('input[type="radio"]');
+    if (radio) radio.checked = true;
+  });
+});
+
+// 选项选中效果（多选）
+document.querySelectorAll('.options.multi .option').forEach(el => {
+  el.addEventListener('click', function(e) {
+    this.classList.toggle('selected');
+    const cb = this.querySelector('input[type="checkbox"]');
+    if (cb) cb.checked = !cb.checked;
+  });
+});
+
+// 自诊结果标签
+document.querySelectorAll('.self-check').forEach(el => {
+  el.addEventListener('click', function() {
+    this.classList.toggle('selected');
+    const cb = this.querySelector('input');
+    if (cb) cb.checked = !cb.checked;
+  });
+});
+
+// 行业选择 → 显示行业专属字段
+document.querySelectorAll('input[name="industry"]').forEach(r => {
+  r.addEventListener('change', function() {
+    renderIndustryFields(this.value);
+  });
+});
+
+function renderIndustryFields(industry) {
+  const container = document.getElementById('industryFields');
+  let html = '<div class="industry-section show">';
+
+  if (industry === '餐饮') {
+    html += `
+      <div class="q">
+        <div class="q-label">🕐 营业时段</div>
+        <div class="options" id="industry_hours" style="flex-direction:row;">
+          <label class="option" data-value="全天"><input type="radio" name="industry_hours" value="全天"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text" style="font-size:12px;">全天</span></label>
+          <label class="option" data-value="午晚市"><input type="radio" name="industry_hours" value="午晚市"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text" style="font-size:12px;">午+晚市</span></label>
+          <label class="option" data-value="仅晚市"><input type="radio" name="industry_hours" value="仅晚市"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text" style="font-size:12px;">仅晚市</span></label>
+        </div>
+      </div>
+      <div class="q">
+        <div class="q-label">🔄 翻台情况（高峰时段）</div>
+        <div class="options" id="industry_turnover" style="flex-direction:row;flex-wrap:wrap;">
+          <label class="option" data-value="2轮以上"><input type="radio" name="industry_turnover" value="2轮以上"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text" style="font-size:12px;">2轮以上</span></label>
+          <label class="option" data-value="1-2轮"><input type="radio" name="industry_turnover" value="1-2轮"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text" style="font-size:12px;">1-2轮</span></label>
+          <label class="option" data-value="不到1轮"><input type="radio" name="industry_turnover" value="不到1轮"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text" style="font-size:12px;">不到1轮</span></label>
+        </div>
+      </div>
+      <div class="q">
+        <div class="q-label">📦 外卖占比</div>
+        <div class="options" id="industry_delivery" style="flex-direction:row;flex-wrap:wrap;">
+          <label class="option" data-value="无外卖"><input type="radio" name="industry_delivery" value="无外卖"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text" style="font-size:12px;">无外卖</span></label>
+          <label class="option" data-value="30%以下"><input type="radio" name="industry_delivery" value="30%以下"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text" style="font-size:12px;">占30%以下</span></label>
+          <label class="option" data-value="30%以上"><input type="radio" name="industry_delivery" value="30%以上"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text" style="font-size:12px;">占30%以上</span></label>
+        </div>
+      </div>
+      <div class="q">
+        <div class="q-label">⭐ 你家最拿手的招牌菜是什么？</div>
+        <input class="text-input" id="industry_signature" placeholder="比如"秘制烤鱼"">
+      </div>`;
+  } else if (industry === '女装') {
+    html += `
+      <div class="q">
+        <div class="q-label">👗 店铺风格</div>
+        <div class="options" id="industry_style" style="flex-direction:row;flex-wrap:wrap;">
+          <label class="option" data-value="韩系"><input type="radio" name="industry_style" value="韩系"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text" style="font-size:12px;">韩系</span></label>
+          <label class="option" data-value="欧美"><input type="radio" name="industry_style" value="欧美"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text" style="font-size:12px;">欧美</span></label>
+          <label class="option" data-value="日系"><input type="radio" name="industry_style" value="日系"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text" style="font-size:12px;">日系</span></label>
+          <label class="option" data-value="通勤"><input type="radio" name="industry_style" value="通勤"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text" style="font-size:12px;">通勤</span></label>
+          <label class="option" data-value="混搭"><input type="radio" name="industry_style" value="混搭"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text" style="font-size:12px;">混搭</span></label>
+        </div>
+      </div>
+      <div class="q">
+        <div class="q-label">💵 客单价大概多少？</div>
+        <div class="options" id="industry_asp" style="flex-direction:row;flex-wrap:wrap;">
+          <label class="option" data-value="100以下"><input type="radio" name="industry_asp" value="100以下"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text" style="font-size:12px;">100元以下</span></label>
+          <label class="option" data-value="100-300"><input type="radio" name="industry_asp" value="100-300"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text" style="font-size:12px;">100-300元</span></label>
+          <label class="option" data-value="300以上"><input type="radio" name="industry_asp" value="300以上"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text" style="font-size:12px;">300元以上</span></label>
+        </div>
+      </div>
+      <div class="q">
+        <div class="q-label">🔄 新款多久上一次？</div>
+        <div class="options" id="industry_new" style="flex-direction:row;flex-wrap:wrap;">
+          <label class="option" data-value="每周"><input type="radio" name="industry_new" value="每周"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text" style="font-size:12px;">每周</span></label>
+          <label class="option" data-value="每两周"><input type="radio" name="industry_new" value="每两周"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text" style="font-size:12px;">每两周</span></label>
+          <label class="option" data-value="每月"><input type="radio" name="industry_new" value="每月"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text" style="font-size:12px;">每月</span></label>
+          <label class="option" data-value="不定期"><input type="radio" name="industry_new" value="不定期"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text" style="font-size:12px;">不定期</span></label>
+        </div>
+      </div>`;
+  } else if (industry === '美业') {
+    html += `
+      <div class="q">
+        <div class="q-label">📅 客人一般预约还是直接来？</div>
+        <div class="options" id="industry_booking" style="flex-direction:row;flex-wrap:wrap;">
+          <label class="option" data-value="大部分预约"><input type="radio" name="industry_booking" value="大部分预约"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text" style="font-size:12px;">大部分预约</span></label>
+          <label class="option" data-value="各一半"><input type="radio" name="industry_booking" value="各一半"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text" style="font-size:12px;">预约和散客各半</span></label>
+          <label class="option" data-value="直接来为主"><input type="radio" name="industry_booking" value="直接来为主"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text" style="font-size:12px;">直接来为主</span></label>
+        </div>
+      </div>
+      <div class="q">
+        <div class="q-label">💇 主要做哪些项目？</div>
+        <div class="options multi" id="industry_services">
+          <label class="option" data-value="剪发"><input type="checkbox" name="industry_services" value="剪发"><span class="check">✓</span><span class="opt-text" style="font-size:12px;">剪发</span></label>
+          <label class="option" data-value="染烫"><input type="checkbox" name="industry_services" value="染烫"><span class="check">✓</span><span class="opt-text" style="font-size:12px;">染烫/护理</span></label>
+          <label class="option" data-value="美容"><input type="checkbox" name="industry_services" value="美容"><span class="check">✓</span><span class="opt-text" style="font-size:12px;">美容/美甲</span></label>
+        </div>
+      </div>`;
+  } else if (industry === '社区零售') {
+    html += `
+      <div class="q">
+        <div class="q-label">🛒 主要卖什么品类？</div>
+        <div class="options multi" id="industry_category">
+          <label class="option" data-value="生鲜"><input type="checkbox" name="industry_category" value="生鲜"><span class="check">✓</span><span class="opt-text" style="font-size:12px;">生鲜果蔬</span></label>
+          <label class="option" data-value="食品"><input type="checkbox" name="industry_category" value="食品"><span class="check">✓</span><span class="opt-text" style="font-size:12px;">包装食品</span></label>
+          <label class="option" data-value="日用"><input type="checkbox" name="industry_category" value="日用"><span class="check">✓</span><span class="opt-text" style="font-size:12px;">日用百货</span></label>
+        </div>
+      </div>
+      <div class="q">
+        <div class="q-label">📱 有没有做线上（微信群/小程序等）？</div>
+        <div class="options" id="industry_online" style="flex-direction:row;flex-wrap:wrap;">
+          <label class="option" data-value="有做的好的"><input type="radio" name="industry_online" value="有做的好的"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text" style="font-size:12px;">有，效果不错</span></label>
+          <label class="option" data-value="有但一般"><input type="radio" name="industry_online" value="有但一般"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text" style="font-size:12px;">有，但效果一般</span></label>
+          <label class="option" data-value="没有"><input type="radio" name="industry_online" value="没有"><span class="dot"><span class="dot-inner"></span></span><span class="opt-text" style="font-size:12px;">还没有</span></label>
+        </div>
+      </div>`;
+  } else if (industry === '其他') {
+    html += `<p style="font-size:13px; color:#666;">请注明你的具体行业：<input class="text-input" id="industry_other" placeholder="如"母婴"" style="margin-top:6px;"></p>`;
+  }
+
+  html += '</div>';
+  container.innerHTML = html;
+
+  // 重新绑定行业专属字段的点击事件
+  container.querySelectorAll('.options:not(.multi) .option').forEach(el => {
+    el.addEventListener('click', function() {
+      const parent = this.closest('.options');
+      parent.querySelectorAll('.option').forEach(o => o.classList.remove('selected'));
+      this.classList.add('selected');
+      const radio = this.querySelector('input[type="radio"]');
+      if (radio) radio.checked = true;
+    });
+  });
+  container.querySelectorAll('.options.multi .option').forEach(el => {
+    el.addEventListener('click', function() {
+      this.classList.toggle('selected');
+      const cb = this.querySelector('input[type="checkbox"]');
+      if (cb) cb.checked = !cb.checked;
+    });
+  });
+}
+
+// 提交
+function submitForm() {
+  const shopName = document.getElementById('shopName').value || '未填写';
+  const industry = document.querySelector('input[name="industry"]:checked');
+  const openTime = document.querySelector('input[name="openTime"]:checked');
+  const revenue = document.querySelector('input[name="revenue"]:checked');
+  const location = document.querySelector('input[name="location"]:checked');
+  const employees = document.querySelector('input[name="employees"]:checked');
+  const rent = document.getElementById('rent').value || '未填写';
+  const mainProblem = document.getElementById('mainProblem').value || '未填写';
+  const expectedGain = document.getElementById('expectedGain').value || '未填写';
+
+  // 检查必填
+  if (!industry) { alert('请选择你的行业'); return; }
+  if (!openTime) { alert('请选择开业时间'); return; }
+
+  // 收集Q1-Q18
+  const qLabels = ['Q1','Q2','Q3','Q4','Q5','Q6','Q7','Q8','Q9','Q10','Q11','Q12','Q13','Q14','Q15','Q16','Q17','Q18'];
+  let qResults = '';
+  qLabels.forEach(q => {
+    const inputs = document.querySelectorAll(`input[name="${q}"]:checked`);
+    if (inputs.length > 0) {
+      const vals = Array.from(inputs).map(i => i.value).join('、');
+      qResults += `\n${q}：${vals}`;
+    } else {
+      qResults += `\n${q}：未选择`;
+    }
+  });
+
+  // 收集自诊结果
+  const selfDiags = Array.from(document.querySelectorAll('input[name="selfDiag"]:checked')).map(i => i.value);
+  const selfDiagStr = selfDiags.length > 0 ? selfDiags.join('、') : '未选择';
+
+  // 行业专属信息
+  let industryExtra = '';
+  const indVal = industry.value;
+  if (indVal === '餐饮') {
+    const hours = document.querySelector('input[name="industry_hours"]:checked');
+    const turn = document.querySelector('input[name="industry_turnover"]:checked');
+    const deli = document.querySelector('input[name="industry_delivery"]:checked');
+    const sig = document.getElementById('industry_signature')?.value || '';
+    if (hours) industryExtra += `\n营业时段：${hours.value}`;
+    if (turn) industryExtra += `\n翻台情况：${turn.value}`;
+    if (deli) industryExtra += `\n外卖占比：${deli.value}`;
+    if (sig) industryExtra += `\n招牌菜：${sig}`;
+  } else if (indVal === '女装') {
+    const style = document.querySelector('input[name="industry_style"]:checked');
+    const asp = document.querySelector('input[name="industry_asp"]:checked');
+    const newv = document.querySelector('input[name="industry_new"]:checked');
+    if (style) industryExtra += `\n店铺风格：${style.value}`;
+    if (asp) industryExtra += `\n客单价：${asp.value}`;
+    if (newv) industryExtra += `\n上新频率：${newv.value}`;
+  } else if (indVal === '美业') {
+    const book = document.querySelector('input[name="industry_booking"]:checked');
+    const svcs = Array.from(document.querySelectorAll('input[name="industry_services"]:checked')).map(i => i.value).join('、');
+    if (book) industryExtra += `\n预约情况：${book.value}`;
+    if (svcs) industryExtra += `\n主要项目：${svcs}`;
+  } else if (indVal === '社区零售') {
+    const cats = Array.from(document.querySelectorAll('input[name="industry_category"]:checked')).map(i => i.value).join('、');
+    const online = document.querySelector('input[name="industry_online"]:checked');
+    if (cats) industryExtra += `\n主要品类：${cats}`;
+    if (online) industryExtra += `\n线上经营：${online.value}`;
+  } else if (indVal === '其他') {
+    const other = document.getElementById('industry_other')?.value || '';
+    if (other) industryExtra += `\n具体行业：${other}`;
+  }
+
+  const result = `📋 实体店经营自诊结果
+━━━━━━━━━━━━━━━━
+🏪 店铺：${shopName}
+📌 行业：${indVal}
+⏰ 开业：${openTime.value}
+📍 位置：${location ? location.value : '未选择'}
+💰 月营收：${revenue ? revenue.value : '未选择'}
+👥 员工：${employees ? employees.value : '未选择'}
+🏠 月租：${rent}元${industryExtra}
+
+📊 6维度自诊：${qResults}
+
+🎯 自诊结果
+━━━━━━━━━━━━━━━━
+圈出问题维度：${selfDiagStr}
+最想解决的问题：${mainProblem}
+预估月增收：${expectedGain}元/月`;
+
+  document.getElementById('resultContent').innerHTML = `<pre style="font-size:12px; line-height:1.6; white-space:pre-wrap; background:#F5F7FA; padding:12px; border-radius:6px;">${result}</pre>`;
+  document.getElementById('modal').classList.add('show');
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('show');
+}
+
+function copyResult() {
+  const text = document.getElementById('resultContent').innerText;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => {
+      alert('已复制，请发送给顾问');
+    }).catch(() => fallbackCopy(text));
+  } else {
+    fallbackCopy(text);
+  }
+}
+
+function fallbackCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  document.body.appendChild(ta);
+  ta.select();
+  document.execCommand('copy');
+  document.body.removeChild(ta);
+  alert('已复制，请发送给顾问');
+}
+</script>
+</body>
+</html>
